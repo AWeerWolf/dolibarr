@@ -2,6 +2,8 @@
 /* Copyright (C) 2002       Rodolphe Quiedeville    <rodolphe@quiedeville.org>
  * Copyright (C) 2004-2007  Laurent Destailleur     <eldy@users.sourceforge.net>
  * Copyright (C) 2022       Alexandre Spangaro      <aspangaro@open-dsi.fr>
+ * Copyright (C) 2024       Frédéric France             <frederic.france@free.fr>
+ * Copyright (C) 2024		MDW							<mdeweerd@users.noreply.github.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -81,12 +83,19 @@ class PaymentSocialContribution extends CommonObject
 	public $bank_line;
 
 	/**
-	 * @deprecated
+	 * @deprecated  Use $amount instead.
 	 * @see $amount
+	 * @var float|int
 	 */
 	public $total;
 
+	/**
+	 * @var float|int
+	 */
 	public $amount; // Total amount of payment
+	/**
+	 * @var array<float|int>
+	 */
 	public $amounts = array(); // Array of amounts
 
 	/**
@@ -96,7 +105,7 @@ class PaymentSocialContribution extends CommonObject
 
 	/**
 	 * @var string
-	 * @deprecated
+	 * @deprecated Use $num_payment instead
 	 * @see $num_payment
 	 */
 	public $num_paiement;
@@ -317,8 +326,10 @@ class PaymentSocialContribution extends CommonObject
 				$this->tms = $this->db->jdate($obj->tms);
 				$this->datep = $this->db->jdate($obj->datep);
 				$this->amount = $obj->amount;
+				$this->total = $obj->amount;
 				$this->fk_typepaiement = $obj->fk_typepaiement;
 				$this->num_payment = $obj->num_payment;
+				$this->num_paiement = $obj->num_payment;
 				$this->note_private = $obj->note;
 				$this->fk_bank = $obj->fk_bank;
 				$this->fk_user_creat = $obj->fk_user_creat;
@@ -527,7 +538,7 @@ class PaymentSocialContribution extends CommonObject
 	 *  Used to build previews or test instances.
 	 *	id must be 0 if object instance is a specimen.
 	 *
-	 *  @return	void
+	 *  @return	int
 	 */
 	public function initAsSpecimen()
 	{
@@ -544,6 +555,8 @@ class PaymentSocialContribution extends CommonObject
 		$this->fk_bank = 0;
 		$this->fk_user_creat = 0;
 		$this->fk_user_modif = 0;
+
+		return 1;
 	}
 
 
@@ -568,13 +581,13 @@ class PaymentSocialContribution extends CommonObject
 
 		$error = 0;
 
-		if (isModEnabled("banque")) {
+		if (isModEnabled("bank")) {
 			include_once DOL_DOCUMENT_ROOT.'/compta/bank/class/account.class.php';
 
 			$acc = new Account($this->db);
 			$acc->fetch($accountid);
 
-			$total = $this->total;
+			$total = $this->amount;
 			if ($mode == 'payment_sc') {
 				$total = -$total;
 			}

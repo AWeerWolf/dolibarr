@@ -249,7 +249,7 @@ class FormSetup
 	 * saveConfFromPost
 	 *
 	 * @param 	bool 		$noMessageInUpdate display event message on errors and success
-	 * @return	 int        -1 if KO, 1 if OK
+	 * @return	int|null    Return -1 if KO, 1 if OK, null if no items
 	 */
 	public function saveConfFromPost($noMessageInUpdate = false)
 	{
@@ -265,7 +265,6 @@ class FormSetup
 		if ($reshook > 0) {
 			return $reshook;
 		}
-
 
 		if (empty($this->items)) {
 			return null;
@@ -574,6 +573,7 @@ class FormSetup
 	}
 }
 
+
 /**
  * This class help to create item for class formSetup
  */
@@ -647,6 +647,9 @@ class FormSetupItem
 
 	public $enabled = 1;
 
+	/**
+	 * @var string	The css to use on the input field of item
+	 */
 	public $cssClass = '';
 
 	/**
@@ -684,7 +687,7 @@ class FormSetupItem
 			$this->fieldValue = getDolGlobalString($this->confKey);
 			return true;
 		} else {
-			$this->fieldValue = null;
+			$this->fieldValue = '';
 			return false;
 		}
 	}
@@ -775,10 +778,10 @@ class FormSetupItem
 		// Modify constant only if key was posted (avoid resetting key to the null value)
 		if ($this->type != 'title') {
 			if (preg_match('/category:/', $this->type)) {
-				if (GETPOST($this->confKey, 'int') == '-1') {
+				if (GETPOSTINT($this->confKey) == '-1') {
 					$val_const = '';
 				} else {
-					$val_const = GETPOST($this->confKey, 'int');
+					$val_const = GETPOSTINT($this->confKey);
 				}
 			} elseif ($this->type == 'multiselect') {
 				$val = GETPOST($this->confKey, 'array');
@@ -902,6 +905,10 @@ class FormSetupItem
 				$selected = (empty($this->fieldValue) ? '' : $this->fieldValue);
 				$out.= $this->form->select_comptes($selected, $this->confKey, 0, '', 0, '', 0, '', 1);
 			}
+		} elseif ($this->type == 'password') {
+			$out.= $this->generateInputFieldPassword('dolibarr');
+		} elseif ($this->type == 'genericpassword') {
+			$out.= $this->generateInputFieldPassword('generic');
 		} else {
 			$out.= $this->generateInputFieldText();
 		}
@@ -1026,6 +1033,37 @@ class FormSetupItem
 
 
 	/**
+	 * generate input field for a password
+	 *
+	 * @param   string  $type  'dolibarr' (dolibarr password rules apply) or 'generic'
+	 *
+	 * @return  string
+	 */
+	public function generateInputFieldPassword($type = 'generic')
+	{
+		global $conf, $langs, $user;
+
+		$min = 8;
+		$max = 50;
+		if ($type == 'dolibarr') {
+			$gen = getDolGlobalString('USER_PASSWORD_GENERATED', 'standard');
+			if ($gen == 'none') {
+				$gen = 'standard';
+			}
+			$nomclass = "modGeneratePass".ucfirst($gen);
+			$nomfichier = $nomclass.".class.php";
+			require_once DOL_DOCUMENT_ROOT."/core/modules/security/generate/".$nomfichier;
+			$genhandler = new $nomclass($this->db, $conf, $langs, $user);
+			$min = $genhandler->length;
+			$max = $genhandler->length2;
+		}
+		$out = '<input required="required" type="password" class="flat" id="'.$this->confKey.'" name="'.$this->confKey.'" value="'.(GETPOST($this->confKey, 'alpha') ? GETPOST($this->confKey, 'alpha') : $this->fieldValue).'" minlength="' . $min . '" maxlength="' . $max . '">';
+		return $out;
+	}
+
+
+
+	/**
 	 * generateInputFieldMultiSelect
 	 *
 	 * @return string
@@ -1104,7 +1142,7 @@ class FormSetupItem
 		} elseif (!empty($errors)) {
 			$this->errors[] = $errors;
 		}
-		return;
+		return null;
 	}
 
 	/**
@@ -1206,6 +1244,8 @@ class FormSetupItem
 			} elseif ($resbank < 0) {
 				$this->setErrors($bankaccount->errors);
 			}
+		} elseif ($this->type == 'password' || $this->type == 'genericpassword') {
+			$out.= str_repeat('*', strlen($this->fieldValue));
 		} else {
 			$out.= $this->fieldValue;
 		}
@@ -1475,6 +1515,30 @@ class FormSetupItem
 	public function setAsSelectBankAccount()
 	{
 		$this->type = 'selectBankAccount';
+		return $this;
+	}
+
+	/**
+	 * Set type of input as a password with dolibarr password rules apply.
+	 * Hide entry on display.
+	 *
+	 * @return self
+	 */
+	public function setAsPassword()
+	{
+		$this->type = 'password';
+		return $this;
+	}
+
+	/**
+	 * Set type of input as a generic password without dolibarr password rules (for external passwords for example).
+	 * Hide entry on display.
+	 *
+	 * @return self
+	 */
+	public function setAsGenericPassword()
+	{
+		$this->type = 'genericpassword';
 		return $this;
 	}
 }

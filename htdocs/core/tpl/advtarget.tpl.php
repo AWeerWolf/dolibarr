@@ -1,5 +1,6 @@
 <?php
 /* Copyright (C) 2024		MDW							<mdeweerd@users.noreply.github.com>
+ * Copyright (C) 2024       Frédéric France             <frederic.france@free.fr>
  */
 /*
  *
@@ -17,7 +18,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-if (isModEnabled('categorie') && $user->hasRight('categorie', 'lire')) {
+if (isModEnabled('category') && $user->hasRight('categorie', 'lire')) {
 	require_once DOL_DOCUMENT_ROOT.'/categories/class/categorie.class.php';
 }
 
@@ -256,7 +257,7 @@ if (getDolGlobalInt('MAIN_MULTILANGS')) {
 	print '</td></tr>'."\n";
 }
 
-if (isModEnabled('categorie') && $user->hasRight('categorie', 'lire')) {
+if (isModEnabled('category') && $user->hasRight('categorie', 'lire')) {
 	// Customer Categories
 	print '<tr><td>'.$langs->trans("CustomersCategoryShort");
 	if (!empty($array_query['cust_categ'])) {
@@ -274,7 +275,7 @@ if (!getDolGlobalString('MAIN_EXTRAFIELDS_DISABLED')) {
 	$socstatic = new Societe($db);
 	$elementtype = $socstatic->table_element;
 	// fetch optionals attributes and labels
-	dol_include_once('/core/class/extrafields.class.php');
+	require_once DOL_DOCUMENT_ROOT . '/core/class/extrafields.class.php';
 	$extrafields = new ExtraFields($db);
 	$extrafields->fetch_name_optionals_label($elementtype);
 	foreach ($extrafields->attributes[$elementtype]['label'] as $key => $val) {
@@ -448,7 +449,7 @@ print '</td></tr></table>';
 print '</td><td>'."\n";
 print '</td></tr>'."\n";
 
-if (isModEnabled('categorie') && $user->hasRight('categorie', 'lire')) {
+if (isModEnabled('category') && $user->hasRight('categorie', 'lire')) {
 	// Customer Categories
 	print '<tr><td>'.$langs->trans("ContactCategoriesShort");
 	if (!empty($array_query['contact_categ'])) {

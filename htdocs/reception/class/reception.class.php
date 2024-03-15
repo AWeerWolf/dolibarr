@@ -11,7 +11,8 @@
  * Copyright (C) 2015       Claudio Aschieri        <c.aschieri@19.coop>
  * Copyright (C) 2016-2022	Ferran Marcet			<fmarcet@2byte.es>
  * Copyright (C) 2018		Quentin Vial-Gouteyron  <quentin.vial-gouteyron@atm-consulting.fr>
- * Copyright (C) 2022-2023  Frédéric France         <frederic.france@netlogic.fr>
+ * Copyright (C) 2022-2024  Frédéric France         <frederic.france@free.fr>
+ * Copyright (C) 2024		MDW							<mdeweerd@users.noreply.github.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,7 +40,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/commonincoterm.class.php';
 if (isModEnabled("propal")) {
 	require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
 }
-if (isModEnabled('commande')) {
+if (isModEnabled('order')) {
 	require_once DOL_DOCUMENT_ROOT.'/commande/class/commande.class.php';
 }
 
@@ -125,7 +126,7 @@ class Reception extends CommonObject
 	public $listmeths; // List of carriers
 
 	/**
-	 * @var CommandeFournisseur
+	 * @var ?CommandeFournisseur
 	 */
 	public $commandeFournisseur;
 
@@ -731,7 +732,11 @@ class Reception extends CommonObject
 				$this->fetch_origin();
 				if (empty($this->origin_object->lines)) {
 					$res = $this->origin_object->fetch_lines();
-					$this->commandeFournisseur = $this->origin_object;	// deprecated
+					if ($this->origin_object instanceof CommandeFournisseur) {
+						$this->commandeFournisseur = $this->origin_object;	// deprecated
+					} else {
+						$this->commandeFournisseur = null;	// deprecated
+					}
 					if ($res < 0) {
 						return $res;
 					}
@@ -742,7 +747,7 @@ class Reception extends CommonObject
 			$qty_wished = array();
 
 			$supplierorderdispatch = new CommandeFournisseurDispatch($this->db);
-			$filter = array('t.fk_commande'=>$this->origin_id);
+			$filter = array('t.fk_commande' => $this->origin_id);
 			if (getDolGlobalInt('SUPPLIER_ORDER_USE_DISPATCH_STATUS')) {
 				$filter['t.status'] = 1; // Restrict to lines with status validated
 			}
@@ -922,7 +927,7 @@ class Reception extends CommonObject
 			$this->ref = trim($this->ref);
 		}
 		if (isset($this->entity)) {
-			$this->entity = trim($this->entity);
+			$this->entity = (int) $this->entity;
 		}
 		if (isset($this->ref_supplier)) {
 			$this->ref_supplier = trim($this->ref_supplier);
@@ -931,13 +936,13 @@ class Reception extends CommonObject
 			$this->socid = trim($this->socid);
 		}
 		if (isset($this->fk_user_author)) {
-			$this->fk_user_author = trim($this->fk_user_author);
+			$this->fk_user_author = (int) $this->fk_user_author;
 		}
 		if (isset($this->fk_user_valid)) {
-			$this->fk_user_valid = trim($this->fk_user_valid);
+			$this->fk_user_valid = (int) $this->fk_user_valid;
 		}
 		if (isset($this->shipping_method_id)) {
-			$this->shipping_method_id = trim($this->shipping_method_id);
+			$this->shipping_method_id = (int) $this->shipping_method_id;
 		}
 		if (isset($this->tracking_number)) {
 			$this->tracking_number = trim($this->tracking_number);
@@ -1305,7 +1310,7 @@ class Reception extends CommonObject
 
 		global $action;
 		$hookmanager->initHooks(array($this->element . 'dao'));
-		$parameters = array('id'=>$this->id, 'getnomurl' => &$result);
+		$parameters = array('id' => $this->id, 'getnomurl' => &$result);
 		$reshook = $hookmanager->executeHooks('getNomUrl', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
 		if ($reshook > 0) {
 			$result = $hookmanager->resPrint;
@@ -1414,7 +1419,7 @@ class Reception extends CommonObject
 	 *  Used to build previews or test instances.
 	 *	id must be 0 if object instance is a specimen.
 	 *
-	 *  @return	void
+	 *  @return int
 	 */
 	public function initAsSpecimen()
 	{
@@ -1465,6 +1470,8 @@ class Reception extends CommonObject
 			$this->lines[] = $line;
 			$xnbp++;
 		}
+
+		return 1;
 	}
 
 	/**
